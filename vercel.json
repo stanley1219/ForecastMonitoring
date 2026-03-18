@@ -1,7 +1,0 @@
-echo '{
-    "buildCommand": "cd frontend && npm install && npm run build",
-    "outputDirectory": "frontend/.next",
-    "installCommand": "cd frontend && npm install",
-    "framework": "nextjs",
-    "rootDirectory": "frontend"
-  }' > /Users/lakshaysolanki/ForecastMonitoringApp/vercel.json
