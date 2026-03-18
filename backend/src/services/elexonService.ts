@@ -3,7 +3,7 @@ import type {
   ActualRecord,
   ForecastDataPoint,
   ForecastRecord
-} from "../types/elexon";
+} from "../types/elexon.js";
 
 const BASE_URL = "https://data.elexon.co.uk/bmrs/api/v1";
 
@@ -83,7 +83,7 @@ export async function fetchForecasts(
     const rows = extractFlatArray(json);
 
     const publishCutoffMs = Date.parse("2025-01-01T00:00:00.000Z");
-    const maxHorizonMs = 48 * 60 * 60 * 1000;
+    const maxHorizonMs = 24 * 60 * 60 * 1000;
 
     return rows
       .filter(isForecastRecord)
