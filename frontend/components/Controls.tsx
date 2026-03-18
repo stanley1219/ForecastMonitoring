@@ -86,7 +86,7 @@ export default function Controls({
         <input
           type="range"
           min={1}
-          max={24}
+          max={48}
           step={1}
           value={horizonHours}
           onChange={(e) => onHorizonChange(Number(e.target.value))}
