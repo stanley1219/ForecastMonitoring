@@ -10,3 +10,10 @@ export interface GenerationResponse {
   to: string;
   horizonHours: number;
 }
+
+export interface CompareDataPoint {
+  time: string;
+  actual: number;
+  forecastA: number;
+  forecastB: number;
+}
