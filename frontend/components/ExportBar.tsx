@@ -59,7 +59,7 @@ async function exportPNG(from: string, to: string): Promise<void> {
 }
 
 const btnClass =
-  "text-xs px-3 py-1 rounded border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition disabled:opacity-50 disabled:cursor-not-allowed";
+  "rounded-lg border border-zinc-300 bg-white px-5 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed";
 
 export default function ExportBar({
   data,
@@ -83,7 +83,7 @@ export default function ExportBar({
   }
 
   return (
-    <div className="mt-3 flex justify-end gap-2 px-4 sm:px-0">
+    <div className="mt-3 flex justify-center gap-3">
       <button
         className={btnClass}
         onClick={() => exportCSV(data, compareData, compareMode, from, to)}

@@ -234,8 +234,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="mx-0 mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white p-2 shadow-sm sm:mx-4 sm:p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          {/* Skeleton loader */}
+        <div className="mx-0 mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white pl-0 pr-0 pt-2 pb-2 sm:pl-2 sm:pr-2shadow-sm sm:mx-4 sm:p-4 dark:border-zinc-800 dark:bg-zinc-900">          {/* Skeleton loader */}
           {isLoading && (
             <div className="rounded-xl p-4">
               <div className="mb-4 h-4 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
@@ -282,7 +281,7 @@ export default function Home() {
                   compareData={compareData.length > 0 ? compareData : undefined}
                 />
               </div>
-              <p className="mt-4 px-4 text-center text-sm text-zinc-500 sm:px-0 dark:text-zinc-400">
+              <p className="mt-1 text-center text-sm text-zinc-500 dark:text-zinc-400">
                 {compareMode
                   ? `Compare mode | Horizon A: ${horizonHours}h · Horizon B: ${horizonHoursB}h`
                   : `Showing ${data.length} data points | Horizon: ${horizonHours}h`}

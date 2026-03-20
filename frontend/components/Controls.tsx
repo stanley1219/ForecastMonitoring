@@ -144,38 +144,42 @@ export default function Controls({
         </button>
       </div>
 
-      {/* Main controls row */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-        <div className="relative z-30 flex-1">
-          <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Start Date
-          </label>
-          <DatePicker
-            selected={toDate(from)}
-            onChange={handleFromChange}
-            dateFormat="yyyy-MM-dd"
-            minDate={MIN_DATE}
-            maxDate={MAX_DATE}
-            className={inputClass}
-            popperClassName="!z-50"
-          />
+      {/* Main controls row — stacked on mobile, single row on desktop */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+        {/* Date pickers — always side by side */}
+        <div className="flex flex-row gap-3">
+          <div className="relative z-30 flex-1 sm:w-36 sm:flex-none">
+            <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Start Date
+            </label>
+            <DatePicker
+              selected={toDate(from)}
+              onChange={handleFromChange}
+              dateFormat="yyyy-MM-dd"
+              minDate={MIN_DATE}
+              maxDate={MAX_DATE}
+              className={inputClass}
+              popperClassName="!z-50"
+            />
+          </div>
+
+          <div className="relative z-30 flex-1 sm:w-36 sm:flex-none">
+            <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              End Date
+            </label>
+            <DatePicker
+              selected={toDate(to)}
+              onChange={handleToChange}
+              dateFormat="yyyy-MM-dd"
+              minDate={toDate(from)}
+              maxDate={MAX_DATE}
+              className={inputClass}
+              popperClassName="!z-50"
+            />
+          </div>
         </div>
 
-        <div className="relative z-30 flex-1">
-          <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            End Date
-          </label>
-          <DatePicker
-            selected={toDate(to)}
-            onChange={handleToChange}
-            dateFormat="yyyy-MM-dd"
-            minDate={toDate(from)}
-            maxDate={MAX_DATE}
-            className={inputClass}
-            popperClassName="!z-50"
-          />
-        </div>
-
+        {/* Horizon slider(s) — grows to fill remaining space on desktop */}
         <div className="flex-1">
           <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
             {compareMode ? `Horizon A: ${horizonHours}h` : `Forecast Horizon: ${horizonHours}h`}
@@ -217,11 +221,7 @@ export default function Controls({
           </button>
           <button
             onClick={onCompareModeToggle}
-            className={
-              compareMode
-                ? "rounded-md border border-amber-400/50 bg-transparent px-3 py-2 text-sm text-amber-400 transition hover:bg-white/5"
-                : "rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm text-gray-400 transition hover:bg-white/5"
-            }
+            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
           >
             {compareMode ? "Exit compare" : "Compare horizons"}
           </button>
