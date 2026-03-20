@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import DatePicker from "react-datepicker";
 
 interface ControlsProps {
@@ -16,7 +17,12 @@ interface ControlsProps {
   horizonHoursB: number;
   onHorizonBChange: (val: number) => void;
   compareLoading: boolean;
+  onQuickSelect: (from: string, to: string) => void;
+  isLive: boolean;
+  onLiveToggle: () => void;
 }
+
+type QuickKey = "today" | "yesterday" | "last7" | "last30";
 
 function toDate(yyyy_mm_dd: string): Date {
   const [y, m, d] = yyyy_mm_dd.split("-").map(Number) as [number, number, number];
@@ -30,6 +36,12 @@ function toDateString(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return toDateString(d);
+}
+
 const MIN_DATE = new Date(2025, 0, 1);
 const MAX_DATE = new Date();
 
@@ -37,6 +49,12 @@ const inputClass =
   "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 " +
   "focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 " +
   "dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100";
+
+function quickBtnClass(active: boolean): string {
+  return active
+    ? "text-xs px-3 py-1 rounded-md border border-white bg-white text-black transition"
+    : "text-xs px-3 py-1 rounded-md border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition";
+}
 
 export default function Controls({
   from,
@@ -52,11 +70,81 @@ export default function Controls({
   horizonHoursB,
   onHorizonBChange,
   compareLoading,
+  onQuickSelect,
+  isLive,
+  onLiveToggle,
 }: ControlsProps) {
   const isApplyLoading = loading || compareLoading;
+  const [activeQuick, setActiveQuick] = useState<QuickKey | null>(null);
+
+  const today = toDateString(new Date());
+
+  function handleQuick(key: QuickKey, f: string, t: string) {
+    setActiveQuick(key);
+    onQuickSelect(f, t);
+    // Do NOT call onApply() here — page.tsx fires fetch via shouldFetch state
+  }
+
+  function handleFromChange(date: Date | null) {
+    if (!date) return;
+    setActiveQuick(null);
+    onFromChange(toDateString(date));
+  }
+
+  function handleToChange(date: Date | null) {
+    if (!date) return;
+    setActiveQuick(null);
+    onToChange(toDateString(date));
+  }
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Quick-select row */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          className={quickBtnClass(activeQuick === "today")}
+          onClick={() => handleQuick("today", today, today)}
+        >
+          Today
+        </button>
+        <button
+          className={quickBtnClass(activeQuick === "yesterday")}
+          onClick={() => handleQuick("yesterday", daysAgo(1), daysAgo(1))}
+        >
+          Yesterday
+        </button>
+        <button
+          className={quickBtnClass(activeQuick === "last7")}
+          onClick={() => handleQuick("last7", daysAgo(6), today)}
+        >
+          Last 7 days
+        </button>
+        <button
+          className={quickBtnClass(activeQuick === "last30")}
+          onClick={() => handleQuick("last30", daysAgo(29), today)}
+        >
+          Last 30 days
+        </button>
+        <button
+          onClick={onLiveToggle}
+          className={
+            isLive
+              ? "text-xs px-3 py-1 rounded-md border border-red-500 bg-red-500/10 text-red-400 transition"
+              : "text-xs px-3 py-1 rounded-md border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition"
+          }
+        >
+          {isLive ? (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-red-500" />
+              Live
+            </span>
+          ) : (
+            "⬤ Live"
+          )}
+        </button>
+      </div>
+
+      {/* Main controls row */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
         <div className="relative z-30 flex-1">
           <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -64,9 +152,7 @@ export default function Controls({
           </label>
           <DatePicker
             selected={toDate(from)}
-            onChange={(date: Date | null) => {
-              if (date) onFromChange(toDateString(date));
-            }}
+            onChange={handleFromChange}
             dateFormat="yyyy-MM-dd"
             minDate={MIN_DATE}
             maxDate={MAX_DATE}
@@ -81,9 +167,7 @@ export default function Controls({
           </label>
           <DatePicker
             selected={toDate(to)}
-            onChange={(date: Date | null) => {
-              if (date) onToChange(toDateString(date));
-            }}
+            onChange={handleToChange}
             dateFormat="yyyy-MM-dd"
             minDate={toDate(from)}
             maxDate={MAX_DATE}
@@ -143,7 +227,6 @@ export default function Controls({
           </button>
         </div>
       </div>
-
     </div>
   );
 }

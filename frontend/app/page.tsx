@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "react-datepicker/dist/react-datepicker.css";
 import { fetchGeneration } from "@/lib/api";
 import { computeMetrics, computeSummaryStats } from "@/lib/metrics";
@@ -9,7 +9,25 @@ import GenerationChart from "@/components/GenerationChart";
 import Controls from "@/components/Controls";
 import AccuracyPanel from "@/components/AccuracyPanel";
 import SummaryStatsPanel from "@/components/SummaryStatsPanel";
+import ExportBar from "@/components/ExportBar";
 import type { GenerationDataPoint, CompareDataPoint } from "@/types/generation";
+
+function todayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function daysAgoStr(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function errorSubtext(message: string): string {
+  if (message.includes("404")) return "No data found for this date range.";
+  if (message.includes("500")) return "The data service is temporarily unavailable.";
+  return "Check your connection and try again.";
+}
 
 export default function Home() {
   const [from, setFrom] = useState("2025-01-01");
@@ -24,12 +42,23 @@ export default function Home() {
   const [compareData, setCompareData] = useState<CompareDataPoint[]>([]);
   const [compareLoading, setCompareLoading] = useState(false);
 
+  const [isLive, setIsLive] = useState(false);
+  const [shouldFetch, setShouldFetch] = useState(false);
+
+  const liveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Refs so loadData always reads the latest from/to without stale closures
+  const fromRef = useRef(from);
+  const toRef = useRef(to);
+  useEffect(() => { fromRef.current = from; }, [from]);
+  useEffect(() => { toRef.current = to; }, [to]);
+
   const loadData = useCallback(() => {
     setLoading(true);
     setError(null);
     setCompareData([]);
 
-    fetchGeneration(from, to, horizonHours)
+    fetchGeneration(fromRef.current, toRef.current, horizonHours)
       .then((res) => setData(res.data))
       .catch((err: unknown) => {
         const message =
@@ -37,7 +66,15 @@ export default function Home() {
         setError(message);
       })
       .finally(() => setLoading(false));
-  }, [from, to, horizonHours]);
+  }, [horizonHours]); // from/to read via refs — not needed in deps
+
+  // Fire loadData after quick-select state has settled
+  useEffect(() => {
+    if (shouldFetch) {
+      setShouldFetch(false);
+      loadData();
+    }
+  }, [shouldFetch, loadData]);
 
   const fetchCompareData = useCallback(async () => {
     setCompareLoading(true);
@@ -45,12 +82,9 @@ export default function Home() {
 
     try {
       const [dataA, dataB] = await Promise.all([
-        fetchGeneration(from, to, horizonHours),
-        fetchGeneration(from, to, horizonHoursB),
+        fetchGeneration(fromRef.current, toRef.current, horizonHours),
+        fetchGeneration(fromRef.current, toRef.current, horizonHoursB),
       ]);
-
-      console.log("dataA sample:", dataA.data.slice(0, 2));
-      console.log("dataB sample:", dataB.data.slice(0, 2));
 
       const mergedMap = new Map<string, CompareDataPoint>();
 
@@ -89,7 +123,7 @@ export default function Home() {
     } finally {
       setCompareLoading(false);
     }
-  }, [from, to, horizonHours, horizonHoursB]);
+  }, [horizonHours, horizonHoursB]);
 
   const handleApply = useCallback(() => {
     if (compareMode) {
@@ -106,9 +140,58 @@ export default function Home() {
     });
   }, []);
 
+  // Bug 2 fix: set shouldFetch instead of calling onApply directly
+  const handleQuickSelect = useCallback((f: string, t: string) => {
+    setFrom(f);
+    setTo(t);
+    setIsLive(false);
+    setShouldFetch(true);
+  }, []);
+
+  const handleLiveToggle = useCallback(() => {
+    setIsLive((prev) => !prev);
+  }, []);
+
+  // Initial load
   useEffect(() => {
     loadData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Live mode: 24h window (yesterday → today), refresh every 15 minutes
+  useEffect(() => {
+    if (liveIntervalRef.current) {
+      clearInterval(liveIntervalRef.current);
+      liveIntervalRef.current = null;
+    }
+
+    if (isLive) {
+      const today = todayStr();
+      const yesterday = daysAgoStr(1);
+      // Set state + refs directly so loadData() below reads fresh values
+      setFrom(yesterday);
+      setTo(today);
+      fromRef.current = yesterday;
+      toRef.current = today;
+      loadData();
+
+      liveIntervalRef.current = setInterval(() => {
+        const t = todayStr();
+        const y = daysAgoStr(1);
+        setFrom(y);
+        setTo(t);
+        fromRef.current = y;
+        toRef.current = t;
+        loadData();
+      }, 15 * 60 * 1000);
+    }
+
+    return () => {
+      if (liveIntervalRef.current) {
+        clearInterval(liveIntervalRef.current);
+        liveIntervalRef.current = null;
+      }
+    };
+  }, [isLive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const multiDay = from !== to;
   const metrics: AccuracyMetrics | null =
@@ -135,9 +218,9 @@ export default function Home() {
             from={from}
             to={to}
             horizonHours={horizonHours}
-            onFromChange={setFrom}
-            onToChange={setTo}
-            onHorizonChange={setHorizonHours}
+            onFromChange={(v) => { setFrom(v); if (isLive) setIsLive(false); }}
+            onToChange={(v) => { setTo(v); if (isLive) setIsLive(false); }}
+            onHorizonChange={(v) => { setHorizonHours(v); if (isLive) setIsLive(false); }}
             onApply={handleApply}
             loading={loading}
             compareMode={compareMode}
@@ -145,46 +228,72 @@ export default function Home() {
             horizonHoursB={horizonHoursB}
             onHorizonBChange={setHorizonHoursB}
             compareLoading={compareLoading}
+            onQuickSelect={handleQuickSelect}
+            isLive={isLive}
+            onLiveToggle={handleLiveToggle}
           />
         </div>
 
         <div className="mx-0 mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white p-2 shadow-sm sm:mx-4 sm:p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          {/* Skeleton loader */}
           {isLoading && (
-            <div className="mx-4 h-96 animate-pulse rounded-lg bg-zinc-100 sm:mx-0 dark:bg-zinc-800" />
+            <div className="rounded-xl p-4">
+              <div className="mb-4 h-4 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+              <div className="mb-4 h-80 w-full animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+              <div className="grid grid-cols-3 gap-3">
+                <div className="h-16 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+                <div className="h-16 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+                <div className="h-16 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+              </div>
+            </div>
           )}
 
+          {/* Error state */}
           {!isLoading && error && (
-            <div className="mx-4 flex h-96 flex-col items-center justify-center gap-4 rounded-lg border border-red-200 bg-red-50 sm:mx-0 dark:border-red-900 dark:bg-red-950/30">
-              <p className="text-sm font-medium text-red-600 dark:text-red-400">
-                Failed to load data. Please check your connection and try again.
-              </p>
+            <div className="mx-4 flex h-96 flex-col items-center justify-center gap-3 sm:mx-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20">
+                <span className="text-lg font-bold text-red-500">✕</span>
+              </div>
+              <p className="text-sm font-medium text-red-400">Failed to load data</p>
+              <p className="text-xs text-zinc-500">{errorSubtext(error)}</p>
               <button
                 onClick={handleApply}
-                className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                className="mt-1 rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
               >
                 Retry
               </button>
             </div>
           )}
 
+          {/* Empty state */}
           {!isLoading && !error && !hasData && (
             <p className="py-20 text-center text-zinc-400">
               No data available for the selected range.
             </p>
           )}
 
+          {/* Data state */}
           {!isLoading && !error && hasData && (
             <>
-              <GenerationChart
-                data={data}
-                multiDay={multiDay}
-                compareData={compareData.length > 0 ? compareData : undefined}
-              />
+              <div id="generation-chart-container">
+                <GenerationChart
+                  data={data}
+                  multiDay={multiDay}
+                  compareData={compareData.length > 0 ? compareData : undefined}
+                />
+              </div>
               <p className="mt-4 px-4 text-center text-sm text-zinc-500 sm:px-0 dark:text-zinc-400">
                 {compareMode
                   ? `Compare mode | Horizon A: ${horizonHours}h · Horizon B: ${horizonHoursB}h`
                   : `Showing ${data.length} data points | Horizon: ${horizonHours}h`}
               </p>
+              <ExportBar
+                data={data}
+                compareData={compareData}
+                from={from}
+                to={to}
+                compareMode={compareMode}
+              />
               {!compareMode && (
                 <>
                   <AccuracyPanel metrics={metrics} />
