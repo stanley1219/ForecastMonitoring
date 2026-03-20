@@ -29,7 +29,26 @@ function errorSubtext(message: string): string {
   return "Check your connection and try again.";
 }
 
+const WIND_QUOTES: { text: string; author: string }[] = [
+  { text: "Powered by possibility.", author: "" },
+  { text: "Where nature meets necessity.", author: "" },
+  { text: "The future moves with the wind.", author: "" },
+  { text: "Energy doesn't have to be taken. It can be borrowed from the wind.", author: "" },
+  { text: "Not all power needs a source you can see.", author: "" },
+  { text: "Energy, the way it should be.", author: "" },
+  { text: "What moves freely, powers freely.", author: "" },
+  { text: "The wind was never out of reach.", author: "" },
+  { text: "Every wind turbine is a monument to human ingenuity.", author: "" },
+  { text: "The answer is blowin' in the wind.", author: "Bob Dylan" },
+] as const;
+
+type WindQuote = (typeof WIND_QUOTES)[number];
+
 export default function Home() {
+  const [quote, setQuote] = useState(WIND_QUOTES[0])
+useEffect(() => {
+  setQuote(WIND_QUOTES[Math.floor(Math.random() * WIND_QUOTES.length)])
+}, []);
   const [from, setFrom] = useState("2025-01-01");
   const [to, setTo] = useState("2025-01-01");
   const [horizonHours, setHorizonHours] = useState(4);
@@ -300,6 +319,17 @@ export default function Home() {
                 </>
               )}
             </>
+          )}
+        </div>
+
+        <div className="mt-6 px-4 pb-6 text-center">
+          <p className="text-sm italic text-zinc-400 dark:text-zinc-500">
+            &ldquo;{quote.text}&rdquo;
+          </p>
+          {quote.author && (
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-600">
+              — {quote.author}
+            </p>
           )}
         </div>
       </main>
