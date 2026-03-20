@@ -59,9 +59,9 @@ export default async function generationRoutes(fastify: FastifyInstance) {
         return reply.send({ error: "`from` and `to` are required" });
       }
       const parsedHorizon = horizonHours ? Number(horizonHours) : 4;
-      const fromMs = new Date(`${from}T00:00:00Z`).getTime();
-      const forecastFromMs = fromMs - parsedHorizon * 60 * 60 * 1000;
-      const forecastFrom = new Date(forecastFromMs).toISOString();
+      const forecastFromDate = new Date(from);
+      forecastFromDate.setHours(forecastFromDate.getHours() - parsedHorizon);
+      const forecastFrom = forecastFromDate.toISOString();
       const forecastTo = `${to}T23:59:59Z`;
       const [actuals, forecasts] = await Promise.all([
         fetchActuals(from, to),

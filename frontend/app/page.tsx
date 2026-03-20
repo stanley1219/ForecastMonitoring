@@ -49,17 +49,37 @@ export default function Home() {
         fetchGeneration(from, to, horizonHoursB),
       ]);
 
-      const bByTime = new Map(dataB.data.map((pt) => [pt.time, pt]));
+      console.log("dataA sample:", dataA.data.slice(0, 2));
+      console.log("dataB sample:", dataB.data.slice(0, 2));
 
-      const merged: CompareDataPoint[] = dataA.data.map((ptA) => {
-        const ptB = bByTime.get(ptA.time);
-        return {
-          time: ptA.time,
-          actual: ptA.actual,
-          forecastA: ptA.forecast,
-          forecastB: ptB?.forecast ?? 0,
-        };
-      });
+      const mergedMap = new Map<string, CompareDataPoint>();
+
+      for (const point of dataA.data) {
+        mergedMap.set(point.time, {
+          time: point.time,
+          actual: point.actual,
+          forecastA: point.forecast,
+          forecastB: 0,
+        });
+      }
+
+      for (const point of dataB.data) {
+        const existing = mergedMap.get(point.time);
+        if (existing) {
+          existing.forecastB = point.forecast;
+        } else {
+          mergedMap.set(point.time, {
+            time: point.time,
+            actual: point.actual,
+            forecastA: 0,
+            forecastB: point.forecast,
+          });
+        }
+      }
+
+      const merged = Array.from(mergedMap.values())
+        .filter((p) => p.forecastA !== 0 && p.forecastB !== 0)
+        .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
       setCompareData(merged);
     } catch (err: unknown) {

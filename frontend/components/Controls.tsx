@@ -105,6 +105,22 @@ export default function Controls({
             onChange={(e) => onHorizonChange(Number(e.target.value))}
             className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-zinc-200 accent-blue-500 dark:bg-zinc-700"
           />
+          {compareMode && (
+            <div className="mt-3">
+              <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                Horizon B: {horizonHoursB}h
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={48}
+                step={1}
+                value={horizonHoursB}
+                onChange={(e) => onHorizonBChange(Number(e.target.value))}
+                className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-zinc-200 accent-orange-500 dark:bg-zinc-700"
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex shrink-0 gap-2">
@@ -128,22 +144,6 @@ export default function Controls({
         </div>
       </div>
 
-      {compareMode && (
-        <div className="flex-1">
-          <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Horizon B: {horizonHoursB}h
-          </label>
-          <input
-            type="range"
-            min={1}
-            max={48}
-            step={1}
-            value={horizonHoursB}
-            onChange={(e) => onHorizonBChange(Number(e.target.value))}
-            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-zinc-200 accent-orange-500 dark:bg-zinc-700"
-          />
-        </div>
-      )}
     </div>
   );
 }
