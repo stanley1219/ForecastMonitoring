@@ -6,7 +6,7 @@ A full-stack web application for monitoring UK national wind power forecast accu
 
 **GitHub:** https://github.com/stanley1219/ForecastMonitoring
 
-> **AI tooling disclosure:** This application was built using Claude (Anthropic) as a thinking partner for architecture decisions, logic design, and prompt generation, and Cursor (IDE) for code execution. All analytical reasoning, feature decisions, and design choices were made by the author. The Jupyter notebook analysis was done independently — AI was used only for low-level help (fixing bugs, calling library functions), not for analytical reasoning or conclusions.
+> **AI tooling disclosure:** This project was implemented using Claude (Anthropic) and Cursor for code generation and analysis execution. The author was responsible for defining the problem, structuring the analytical approach, directing the methodology, and shaping the final outputs. AI tools were used to carry out the implementation and computations under this guidance.
 
 ---
 
